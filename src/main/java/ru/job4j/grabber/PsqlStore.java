@@ -1,5 +1,8 @@
 package ru.job4j.grabber;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
@@ -9,6 +12,8 @@ import java.util.List;
 import java.util.Properties;
 
 public class PsqlStore implements Store, AutoCloseable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(PsqlStore.class.getName());
 
     private Connection cnn;
 
@@ -21,7 +26,7 @@ public class PsqlStore implements Store, AutoCloseable {
                     cfg.getProperty("jdbc.password")
             );
         } catch (Exception e) {
-            throw new IllegalStateException("Ошибка загрузки Properties");
+            LOG.error("Ошибка подключения");
         }
     }
 
@@ -42,7 +47,7 @@ public class PsqlStore implements Store, AutoCloseable {
                 }
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Ошибка сохранения Post");
+            LOG.error("Ошибка сохранения Post");
         }
     }
 
@@ -54,11 +59,11 @@ public class PsqlStore implements Store, AutoCloseable {
                 while (resultSet.next()) {
                     posts.add(doPost(resultSet));
                 }
-                return posts;
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Ошибка выгрузки Post");
+            LOG.error("Ошибка выгрузки Post");
         }
+        return posts;
     }
 
     @Override
@@ -72,22 +77,24 @@ public class PsqlStore implements Store, AutoCloseable {
                 }
             }
         } catch (Exception e) {
-            throw new IllegalStateException("Ошибка выгрузки Post");
+            LOG.error("Ошибка выгрузки Post");
         }
         return rsl;
     }
 
     private Post doPost(ResultSet resultSet) {
+        Post rsl = null;
         try {
-            return new Post(
+             rsl = new Post(
                     resultSet.getInt("id"),
                     resultSet.getString("name"),
                     resultSet.getString("link"),
                     resultSet.getString("text"),
                     resultSet.getTimestamp("created").toLocalDateTime());
         } catch (SQLException e) {
-            throw new IllegalStateException("Ошибка создания Post");
+            LOG.error("Ошибка создания Post");
         }
+        return rsl;
     }
 
     private static Properties load() {
@@ -95,7 +102,7 @@ public class PsqlStore implements Store, AutoCloseable {
         try (InputStream in = PsqlStore.class.getClassLoader().getResourceAsStream("grabber.properties")) {
             properties.load(in);
         } catch (IOException ex) {
-            throw new IllegalStateException("Ошибка загрузки Properties");
+            LOG.error("Ошибка загрузки Properties");
         }
         return properties;
     }
@@ -114,7 +121,7 @@ public class PsqlStore implements Store, AutoCloseable {
             psqlStore.save(post);
             System.out.println(psqlStore.findById(post.getId()));
         } catch (Exception e) {
-            throw new IllegalStateException("Ошибка при демонстрации методов");
+            LOG.error("Ошибка при демонстрации методов");
         }
     }
 }
