@@ -21,13 +21,15 @@ public class PsqlStore implements Store, AutoCloseable {
                     cfg.getProperty("jdbc.password")
             );
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException("Ошибка загрузки Properties");
         }
     }
 
     @Override
     public void save(Post post) {
-        try (PreparedStatement statement = cnn.prepareStatement("insert into post(name, link, text, created) values (?, ?, ?, ?)",
+        try (PreparedStatement statement = cnn.prepareStatement(
+                "insert into post(name, link, text, created) "
+                  + "values (?, ?, ?, ?) on conflict (link) do nothing",
                 Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, post.getTitle());
             statement.setString(2, post.getLink());
@@ -40,7 +42,7 @@ public class PsqlStore implements Store, AutoCloseable {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Ошибка сохранения Post");
         }
     }
 
@@ -55,7 +57,7 @@ public class PsqlStore implements Store, AutoCloseable {
                 return posts;
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException("Ошибка выгрузки Post");
         }
     }
 
@@ -70,7 +72,7 @@ public class PsqlStore implements Store, AutoCloseable {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Ошибка выгрузки Post");
         }
         return rsl;
     }
@@ -84,7 +86,7 @@ public class PsqlStore implements Store, AutoCloseable {
                     resultSet.getString("text"),
                     resultSet.getTimestamp("created").toLocalDateTime());
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException("Ошибка создания Post");
         }
     }
 
@@ -93,7 +95,7 @@ public class PsqlStore implements Store, AutoCloseable {
         try (InputStream in = PsqlStore.class.getClassLoader().getResourceAsStream("grabber.properties")) {
             properties.load(in);
         } catch (IOException ex) {
-            ex.printStackTrace();
+            throw new IllegalStateException("Ошибка загрузки Properties");
         }
         return properties;
     }
@@ -112,7 +114,7 @@ public class PsqlStore implements Store, AutoCloseable {
             psqlStore.save(post);
             System.out.println(psqlStore.findById(post.getId()));
         } catch (Exception e) {
-                throw new RuntimeException(e);
+            throw new IllegalStateException("Ошибка при демонстрации методов");
         }
     }
 }
